@@ -92,12 +92,11 @@ def parse_cams_statement(pdf_path: str) -> Dict:
 
     except Exception as e:
         logger.error(f"Error parsing PDF: {e}")
-        # Return demo data if parsing fails
-        return _get_demo_data()
+        raise ValueError(f"Failed to parse PDF: {str(e)}")
 
     if not transactions:
-        logger.warning("No transactions found, returning demo data")
-        return _get_demo_data()
+        logger.warning("No transactions found in PDF")
+        raise ValueError("No transaction data found in the uploaded PDF. Please ensure it's a valid CAMS statement.")
 
     df = pd.DataFrame(transactions)
 
@@ -141,14 +140,16 @@ def _detect_fund_name(line: str, lines: List[str], idx: int) -> Optional[Dict]:
 
 def _parse_transaction_line(line: str) -> Optional[Dict]:
     """Parse a single transaction line from CAMS statement."""
-    # Pattern: DD-Mon-YYYY TYPE AMOUNT UNITS NAV
-    date_pattern = r'(\d{2}-(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{4})'
-    match = re.match(date_pattern, line, re.IGNORECASE)
+    # Pattern: DD-Mon-YYYY or DD/MM/YYYY or DD-MM-YYYY
+    date_pattern = r'(\d{2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{2})[-/]\d{2,4})'
+    match = re.search(date_pattern, line, re.IGNORECASE)
     if not match:
         return None
 
     date_str = match.group(1)
-    rest = line[len(date_str):].strip()
+    # Get the position of the date to extract remaining text correctly
+    date_end = match.end()
+    rest = line[date_end:].strip()
 
     # Determine transaction type
     txn_type = 'Purchase'

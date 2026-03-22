@@ -13,4 +13,4 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: FRONTEND_URL
-        value: https://your-project-id.web.app
+        value: https://foliox-001.web.app

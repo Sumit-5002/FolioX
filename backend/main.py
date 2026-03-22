@@ -174,11 +174,7 @@ async def analyze_portfolio(
         result = _run_full_analysis(parsed, goal)
     except Exception as e:
         logger.error(f"Analysis failed: {e}")
-        # Fallback to demo on any error
-        parsed = _get_demo_data()
-        result = _run_full_analysis(parsed, goal)
-        result["is_demo"] = True
-        result["parse_error"] = str(e)
+        raise HTTPException(status_code=400, detail=str(e))
     finally:
         try:
             os.unlink(tmp_path)

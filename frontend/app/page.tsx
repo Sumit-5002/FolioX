@@ -57,8 +57,9 @@ export default function HomePage() {
 
       sessionStorage.setItem("mf_xray_result", JSON.stringify(data));
       router.push("/analyze");
-    } catch (err) {
-      setError("Analysis failed. Please try again or use the demo.");
+    } catch (err: any) {
+      const msg = err.response?.data?.detail || "Analysis failed. Please try again or use the demo.";
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
