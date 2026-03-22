@@ -1,0 +1,58 @@
+# ── Python / Backend ──────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+*.so
+.eggs/
+.venv/
+venv/
+env/
+ENV/
+
+# Backend env secrets (NEVER commit these)
+backend/.env
+backend/*.env
+
+# Uploaded PDFs (user data — never commit)
+backend/uploads/
+backend/temp/
+*.pdf
+
+# ── Node / Frontend ───────────────────────────────────
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+frontend/.env*.local
+frontend/.cache/
+
+# ── OS Files ──────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+
+# ── Editor ────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+
+# ── Logs ──────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+
+# ── Misc ──────────────────────────────────────────────
+.cache/
+.turbo/
+coverage/
+.nyc_output/

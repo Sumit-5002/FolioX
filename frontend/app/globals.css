@@ -1,0 +1,147 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #070b14;
+  --foreground: #f0f4f8;
+  --brand: #10b981;
+  --brand-glow: rgba(16, 185, 129, 0.2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ── Scrollbar ─────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0d1321; }
+::-webkit-scrollbar-thumb { background: #2d3a4f; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3d4f68; }
+
+/* ── Glass Card ────────────────────────────────── */
+@layer components {
+  .glass-card {
+    @apply bg-dark-800 border border-dark-500 rounded-2xl backdrop-blur-sm;
+    background: linear-gradient(135deg, rgba(13,19,33,0.9) 0%, rgba(28,42,58,0.7) 100%);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300;
+  }
+  .glass-card-hover:hover {
+    border-color: rgba(16,185,129,0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(16,185,129,0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+    transform: translateY(-2px);
+  }
+
+  .stat-pill {
+    @apply inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm;
+    @apply bg-brand-500 text-white transition-all duration-200;
+    @apply hover:bg-brand-600 active:scale-95;
+    box-shadow: 0 4px 16px rgba(16,185,129,0.3);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 6px 24px rgba(16,185,129,0.45);
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm;
+    @apply border border-dark-400 text-gray-300 transition-all duration-200;
+    @apply hover:border-brand-500 hover:text-brand-400 active:scale-95;
+  }
+
+  .number-highlight {
+    @apply font-bold tabular-nums;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #10b981, #3b82f6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-header {
+    @apply flex items-center gap-3 mb-6;
+  }
+
+  .section-icon {
+    @apply w-10 h-10 rounded-xl flex items-center justify-center text-xl;
+  }
+
+  .progress-bar {
+    @apply h-2 rounded-full overflow-hidden bg-dark-500;
+  }
+
+  .progress-fill {
+    @apply h-full rounded-full transition-all duration-1000 ease-out;
+  }
+
+  .table-row {
+    @apply flex items-center justify-between py-3 border-b border-dark-500 last:border-0;
+  }
+
+  .badge-red    { @apply stat-pill bg-red-500/20 text-red-400 border border-red-500/30; }
+  .badge-green  { @apply stat-pill bg-brand-500/20 text-brand-400 border border-brand-500/30; }
+  .badge-amber  { @apply stat-pill bg-amber-500/20 text-amber-400 border border-amber-500/30; }
+  .badge-blue   { @apply stat-pill bg-blue-500/20 text-blue-400 border border-blue-500/30; }
+  .badge-purple { @apply stat-pill bg-purple-500/20 text-purple-400 border border-purple-500/30; }
+
+  /* Animated gradient border */
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(#0d1321, #0d1321) padding-box,
+                linear-gradient(135deg, #10b981, #3b82f6, #8b5cf6) border-box;
+    border: 1px solid transparent;
+  }
+}
+
+/* ── Upload drop zone ──────────────────────────── */
+.dropzone-active {
+  border-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.05) !important;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15), inset 0 0 40px rgba(16, 185, 129, 0.03) !important;
+}
+
+/* ── Shimmer loading ───────────────────────────── */
+.shimmer {
+  background: linear-gradient(90deg, #1c2a3a 25%, #243042 50%, #1c2a3a 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* ── Number counter animation ──────────────────── */
+.animate-number {
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* ── Chart tooltip ─────────────────────────────── */
+.recharts-tooltip-wrapper {
+  outline: none !important;
+}
+.custom-tooltip {
+  @apply glass-card px-4 py-3 text-sm;
+}
+
+/* ── Chat bubble ───────────────────────────────── */
+.chat-user { @apply bg-brand-500/20 border border-brand-500/30 text-white; }
+.chat-ai   { @apply bg-dark-600 border border-dark-400 text-gray-200; }
