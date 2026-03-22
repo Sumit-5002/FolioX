@@ -8,10 +8,10 @@ logger = logging.getLogger(__name__)
 # Pre-compile regexes for speed
 RE_FOLIO = re.compile(r'Folio\s*(?:No|Number)?[:\s]+(\d+[\w/]*)', re.IGNORECASE)
 RE_AMC_PATTERNS = re.compile(
-    r'((?:Mirae|HDFC|SBI|ICICI|Axis|Kotak|Nippon|DSP|UTI|Tata|Franklin|Motilal|Parag|Canara|Aditya|Sundaram|PGIM|Invesco)\s+[\w\s]+\s+(?:Fund|Plan))',
+    r'((?:Mirae|HDFC|SBI|ICICI|Axis|Kotak|Nippon|DSP|UTI|Tata|Franklin|Motilal|Parag|Canara|Aditya|Sundaram|PGIM|Invesco|Quant|Edelweiss|Bandhan|WhiteOak|Mahindra|LIC|HSBC|IDFC|Union|Taurus|Trust|Navi|Groww|Samco|NJ|360|PPFAS)\s+[\w\s\&]+\s+(?:Fund|Plan|Equity|Bluechip|Scheme|Direct))',
     re.IGNORECASE
 )
-RE_TXN_DATE = re.compile(r'(\d{2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{2})[-/]\d{2,4})', re.IGNORECASE)
+RE_TXN_DATE = re.compile(r'(\d{2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC|\d{2})[-/]\d{2,4})')
 RE_NUMBERS = re.compile(r'[\d,]+\.?\d*')
 RE_NAV = re.compile(r'NAV\s*[:\s]+(\d+\.?\d*)', re.IGNORECASE)
 RE_BALANCE = re.compile(r'Balance\s*:\s*([\d,]+\.[\d]+)')
@@ -130,15 +130,26 @@ def _detect_fund_name(line: str, lines: List[str], idx: int) -> Optional[Dict]:
     folio_match = RE_FOLIO.search(line)
     if folio_match:
         folio = folio_match.group(1)
-        fund_name = line.split('Folio')[0].strip()
+        # Often the fund name is everything before "Folio No" or on the line above
+        fund_name = line.split('Folio')[0].strip(' -:').strip()
         if not fund_name and idx > 0:
             fund_name = lines[idx - 1].strip()
+        
+        # If it says "Scheme Name: ...", extract that
+        if 'Scheme Name' in fund_name:
+            fund_name = fund_name.split('Scheme Name')[1].strip(' -:').strip()
+        elif idx > 0 and 'Scheme Name' in lines[idx-1]:
+            fund_name = lines[idx-1].split('Scheme Name')[1].strip(' -:').strip()
+
         if fund_name:
             return {'name': fund_name, 'folio': folio}
 
     match = RE_AMC_PATTERNS.search(line)
     if match:
-        return {'name': match.group(1).strip(), 'folio': ''}
+        name = match.group(1).strip()
+        # Clean up common garbage at end of name
+        name = re.sub(r'(?:Closing|Balance|Market|Value|NAV|PAN|Bank).*$', '', name, flags=re.IGNORECASE).strip()
+        return {'name': name, 'folio': ''}
 
     return None
 
