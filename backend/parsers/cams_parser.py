@@ -5,6 +5,17 @@ from typing import List, Dict, Optional
 import logging
 
 logger = logging.getLogger(__name__)
+# Pre-compile regexes for speed
+RE_FOLIO = re.compile(r'Folio\s*(?:No|Number)?[:\s]+(\d+[\w/]*)', re.IGNORECASE)
+RE_AMC_PATTERNS = re.compile(
+    r'((?:Mirae|HDFC|SBI|ICICI|Axis|Kotak|Nippon|DSP|UTI|Tata|Franklin|Motilal|Parag|Canara|Aditya|Sundaram|PGIM|Invesco)\s+[\w\s]+\s+(?:Fund|Plan))',
+    re.IGNORECASE
+)
+RE_TXN_DATE = re.compile(r'(\d{2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{2})[-/]\d{2,4})', re.IGNORECASE)
+RE_NUMBERS = re.compile(r'[\d,]+\.?\d*')
+RE_NAV = re.compile(r'NAV\s*[:\s]+(\d+\.?\d*)', re.IGNORECASE)
+RE_BALANCE = re.compile(r'Balance\s*:\s*([\d,]+\.[\d]+)')
+RE_CURRENCY = re.compile(r'(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)')
 
 
 def parse_cams_statement(pdf_path: str) -> Dict:
@@ -21,12 +32,13 @@ def parse_cams_statement(pdf_path: str) -> Dict:
 
     try:
         with pdfplumber.open(pdf_path) as pdf:
-            full_text = ""
+            pages_text = []
             for page in pdf.pages:
                 text = page.extract_text()
                 if text:
-                    full_text += text + "\n"
+                    pages_text.append(text)
 
+            full_text = "\n".join(pages_text)
             lines = full_text.split('\n')
 
             # Extract investor info from first page
@@ -69,14 +81,14 @@ def parse_cams_statement(pdf_path: str) -> Dict:
                         funds_summary[current_fund]['current_value'] = value
 
                 # Detect units
-                if current_fund and re.search(r'Balance\s*:\s*[\d,]+\.[\d]+', line):
-                    units_match = re.search(r'Balance\s*:\s*([\d,]+\.[\d]+)', line)
+                if current_fund and RE_BALANCE.search(line):
+                    units_match = RE_BALANCE.search(line)
                     if units_match:
                         funds_summary[current_fund]['units'] = float(units_match.group(1).replace(',', ''))
 
                 # Detect NAV
                 if current_fund and 'NAV' in line:
-                    nav_match = re.search(r'NAV\s*[:\s]+(\d+\.?\d*)', line)
+                    nav_match = RE_NAV.search(line)
                     if nav_match:
                         funds_summary[current_fund]['current_nav'] = float(nav_match.group(1))
 
@@ -115,39 +127,29 @@ def parse_cams_statement(pdf_path: str) -> Dict:
 
 def _detect_fund_name(line: str, lines: List[str], idx: int) -> Optional[Dict]:
     """Detect if a line contains a fund name header."""
-    # Pattern: "Fund Name - Growth" or "Folio No: 12345"
-    folio_match = re.search(r'Folio\s*(?:No|Number)?[:\s]+(\d+[\w/]*)', line, re.IGNORECASE)
+    folio_match = RE_FOLIO.search(line)
     if folio_match:
         folio = folio_match.group(1)
-        # Fund name is usually the line before folio or in the same block
         fund_name = line.split('Folio')[0].strip()
         if not fund_name and idx > 0:
             fund_name = lines[idx - 1].strip()
         if fund_name:
             return {'name': fund_name, 'folio': folio}
 
-    # Also detect by AMC name patterns
-    amc_patterns = [
-        r'((?:Mirae|HDFC|SBI|ICICI|Axis|Kotak|Nippon|DSP|UTI|Tata|Franklin|Motilal|Parag|Canara|Aditya|Sundaram|PGIM|Invesco)\s+[\w\s]+\s+(?:Fund|Plan))',
-    ]
-    for pattern in amc_patterns:
-        match = re.search(pattern, line, re.IGNORECASE)
-        if match:
-            return {'name': match.group(1).strip(), 'folio': ''}
+    match = RE_AMC_PATTERNS.search(line)
+    if match:
+        return {'name': match.group(1).strip(), 'folio': ''}
 
     return None
 
 
 def _parse_transaction_line(line: str) -> Optional[Dict]:
     """Parse a single transaction line from CAMS statement."""
-    # Pattern: DD-Mon-YYYY or DD/MM/YYYY or DD-MM-YYYY
-    date_pattern = r'(\d{2}[-/](?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec|\d{2})[-/]\d{2,4})'
-    match = re.search(date_pattern, line, re.IGNORECASE)
+    match = RE_TXN_DATE.search(line)
     if not match:
         return None
 
     date_str = match.group(1)
-    # Get the position of the date to extract remaining text correctly
     date_end = match.end()
     rest = line[date_end:].strip()
 
@@ -165,7 +167,7 @@ def _parse_transaction_line(line: str) -> Optional[Dict]:
         txn_type = 'Purchase'
 
     # Extract numbers from the line
-    numbers = re.findall(r'[\d,]+\.?\d*', rest)
+    numbers = RE_NUMBERS.findall(rest)
     numbers = [float(n.replace(',', '')) for n in numbers if n]
 
     amount, units, nav = 0.0, 0.0, 0.0
@@ -210,7 +212,7 @@ def _extract_pan(line: str) -> str:
 
 
 def _extract_currency_value(line: str) -> Optional[float]:
-    match = re.search(r'(?:Rs\.?|INR|₹)?\s*([\d,]+\.?\d*)', line)
+    match = RE_CURRENCY.search(line)
     if match:
         return float(match.group(1).replace(',', ''))
     return None
