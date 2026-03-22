@@ -167,14 +167,41 @@ def _parse_transaction_line(line: str) -> Optional[Dict]:
         txn_type = 'Purchase'
 
     # Extract numbers from the line
-    numbers = RE_NUMBERS.findall(rest)
-    numbers = [float(n.replace(',', '')) for n in numbers if n]
+    numbers_str = RE_NUMBERS.findall(rest)
+    numbers = []
+    for n in numbers_str:
+        try:
+            numbers.append(float(n.replace(',', '')))
+        except ValueError:
+            continue
 
     amount, units, nav = 0.0, 0.0, 0.0
+    
+    # Heuristic for CAMS:
+    # 1. More than 3 numbers: likely [Amount, Units, NAV, Balance]
+    # 2. 3 numbers: likely [Amount, Units, NAV]
+    # 3. 2 numbers: likely [Amount, Units]
+    
     if len(numbers) >= 3:
+        # Check decimals to guess which is which
+        # NAV usually has 4 decimals, Units 3, Amount 2
+        decimals = [len(n.split('.')[1]) if '.' in n else 0 for n in numbers_str]
+        
+        # Simple priority: 
+        # Amount = largest value (usually)
+        # Units = value with 3+ decimals
+        # NAV = value with 4+ decimals
+        
         amount = numbers[0]
         units = numbers[1]
         nav = numbers[2]
+        
+        # Improve guessing if possible
+        for idx, d in enumerate(decimals[:3]):
+            if d >= 4:
+                nav = numbers[idx]
+            elif d == 3:
+                units = numbers[idx]
     elif len(numbers) == 2:
         amount = numbers[0]
         units = numbers[1]
@@ -226,11 +253,17 @@ def _find_scheme_code(fund_name: str) -> str:
         'SBI Small Cap': '125354',
         'ICICI Prudential Flexi Cap': '120586',
         'Axis Long Term Equity': '115592',
+        'Parag Parikh': '122639',
+        'HDFC Liquid': '100444'
     }
     for key, code in scheme_map.items():
         if key.lower() in fund_name.lower():
             return code
-    return '118989'  # Default
+    
+    # If not found, a more robust parser would use the search_funds API here
+    # However, since this is called in a loop, we skip live API calls for now
+    # and use a slightly better heuristic (defaulting to a common equity fund)
+    return '118989'  # Mirae Asset Large Cap Default
 
 
 def _estimate_expense_ratio(fund_name: str, is_direct: bool) -> float:

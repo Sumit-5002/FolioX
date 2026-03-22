@@ -70,6 +70,16 @@ def enrich_funds_with_live_nav(funds: List[Dict]) -> List[Dict]:
     enriched = []
     for fund in funds:
         scheme_code = fund.get("scheme_code", "")
+        fund_name = fund.get("name", "")
+
+        # If we have a default or missing scheme code, try searching
+        if (not scheme_code or scheme_code == "118989") and fund_name:
+            search_results = search_funds(fund_name)
+            if search_results:
+                # Find best match (simple heuristic: first result)
+                scheme_code = search_results[0].get("schemeCode", scheme_code)
+                fund["scheme_code"] = scheme_code
+
         if scheme_code:
             live_nav = get_fund_nav(scheme_code)
             if live_nav:
